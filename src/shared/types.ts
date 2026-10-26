@@ -4,6 +4,9 @@ export type LaneId = keyof AnalyzeResponse["lanes"];
 export type Strength = AnalyzeResponse["lanes"]["scam"]["strength"];
 export type NextMove = "Apply" | "Verify first" | "Skip";
 
+/** Up to 2 screenshots per check: each image costs 2,048 tokens against an 8,000 tokens-per-minute free limit */
+export const MAX_SCREENSHOTS = 2;
+
 /** Display order of the lanes */
 export const LANE_ORDER: readonly LaneId[] = ["scam", "ghost", "mismatch"];
 

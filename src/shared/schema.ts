@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_SCREENSHOTS } from "@/shared/types";
 
 // ---------- Context (matches the chip options exactly) ----------
 
@@ -37,10 +38,15 @@ const TextRequestSchema = z.object({
     context: ContextSchema,
 });
 
-const ImageRequestSchema = z.object({
-    mode: z.literal("image"),
+const ImageSchema = z.object({
     imageBase64: z.string().min(1),
     mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
+const ImageRequestSchema = z.object({
+    mode: z.literal("image"),
+    /** Screenshots of one post, in reading order */
+    images: z.array(ImageSchema).min(1).max(MAX_SCREENSHOTS),
     context: ContextSchema,
 });
 

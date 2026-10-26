@@ -8,10 +8,11 @@ status: approved
 ## How This Works, In Plain Language
 Ghostlisted is a single-page Next.js web application designed to help fresh job seekers detect warning signals in job listings before applying. 
 
-1. **Input & Extraction**: The user pastes job post text or uploads a screenshot (or selects a pre-loaded sample). If a screenshot is provided, client-side canvas logic in `src/client/lib/image.ts` validates and resizes the image before sending it to a Next.js API route (`src/app/api/analyze/route.ts`), where Groq AI model reads the image and extracts its text.
+1. **Input & Extraction**: The user pastes job post text or uploads up to 2 screenshots (or selects one of 4 pre-loaded samples, including a Bengali scam-like sample). The limit is up to 2 screenshots because the vision model's free tier allows 8,000 tokens per minute and each image counts as 2,048 tokens. If screenshots are provided (JPG, PNG, or WebP, up to 4 MB each), ordered thumbnails allow removing images one by one. Client-side canvas logic in `src/client/lib/image.ts` validates and downscales each image to keep the total payload under Vercel's 4.5 MB limit before sending to `src/app/api/analyze/route.ts`. Multiple screenshots are analyzed together in order as one post, and the extracted text joins them in that order. The report label reads *"Text read from your screenshot"* (for 1 image) or *"Text read from your N screenshots"* (for N images).
 2. **AI Signal Extraction**: The server logic (`src/server/groq.ts` and `src/server/prompt.ts`, protected by `import "server-only"`) passes the post text and context choices to Groq with strict system instructions and a JSON response schema generated directly from Zod (`src/shared/schema.ts`). Groq returns structured signals categorized into Scam, Ghost, and Fresher-Mismatch lanes with exact quotes (where Mismatch lane applies only to posts labeled fresher, graduate, trainee, entry-level, junior, or intern, and each quote appears in only one lane).
 3. **Deterministic Rules Engine**: Before rendering, pure TypeScript functions in `src/shared/rules.ts` sanitize the output:
    - Quotes that do not match the post text after collapsing whitespace and ignoring case (while preserving exact punctuation) are discarded.
+   - If the same quote (after normalization) appears in more than one lane, keep it only in the higher-severity lane (Scam > Mismatch > Ghost). Covered by a unit test.
    - Signals derived solely from context answers are tagged as "From your answers" and exempted from quote matching.
    - The overall recommended action (**Apply**, **Verify first**, or **Skip**) is calculated deterministically based on lane severity strength.
 4. **Interactive "Case File" UI**: The browser renders a high-contrast investigator-style report. Highlight range logic in `src/shared/highlight.ts` maps validated quotes back to their exact character indices in the unmodified text. Clicking any signal item in a lane card smooth-scrolls and pulses the matching highlight in `PostView`.
@@ -19,21 +20,21 @@ Ghostlisted is a single-page Next.js web application designed to help fresh job 
 ## The Core Journey Through the System
 PRD ref: `prd.md > The Core Journey`.
 
-1. **Arrival & Input Selection**: User opens `src/app/page.tsx`. `InputPanel` renders 3 tabs (*Paste text*, *Upload screenshot*, *Try a sample*) and 3 `ContextChips` questions.
+1. **Arrival & Input Selection**: User opens `src/app/page.tsx`. `InputPanel` renders 3 tabs (*Paste text*, *Upload screenshot* [accepting up to 2 images with removable ordered thumbnails], *Try a sample* [4 fictional samples including Bengali scam-like]) and 3 `ContextChips` questions.
 2. **Client Validation & Image Downscaling**:
    - For text: Validated between 80 and 8,000 characters.
-   - For image: `src/client/lib/image.ts` validates file format (JPG, PNG, WebP) and size (≤ 4 MB), then resizes the long edge to max 1,600px and re-encodes as JPEG base64 to ensure request body stays under Vercel's 4.5 MB limit.
-3. **API Request**: Browser posts JSON payload matching the discriminated union request schema (`src/shared/schema.ts`) to `POST /api/analyze`.
+   - For image: `src/client/lib/image.ts` validates file formats (JPG, PNG, WebP) and size (≤ 4 MB each, up to 2 images due to the vision model's 8,000 TPM limit where each image uses 2,048 tokens), then downscales each image and re-encodes as JPEG base64 to ensure the total request body stays under Vercel's 4.5 MB limit.
+3. **API Request**: Browser posts JSON payload matching the discriminated union request schema (`src/shared/schema.ts`) to `POST /api/analyze` (in image mode, sending `images: [{ imageBase64, mimeType }, ...]`).
 4. **Server Execution (`src/app/api/analyze/route.ts`)**:
    - Validates request payload using Zod (`src/shared/schema.ts`). On failure, returns `TOO_SHORT` or `INVALID_IMAGE`.
-   - Server-only modules (`src/server/groq.ts`, `src/server/prompt.ts`) execute Groq API call with `response_format` `json_schema` generated via `z.toJSONSchema` (`strict: false`) and prompt-injection defenses. In text mode the model returns an empty `extractedText` and the server sets it to the user's original text, so highlights always map to the exact input.
+   - Server-only modules (`src/server/groq.ts`, `src/server/prompt.ts`) execute Groq API call with `response_format` `json_schema` generated via `z.toJSONSchema` (`strict: false`) and prompt-injection defenses. In image mode, multiple images (up to 2) are analyzed together in order as one post, and the extracted text joins them in that order. In text mode the model returns an empty `extractedText` and the server sets it to the user's original text, so highlights always map to the exact input.
    - Handles errors deterministically: `isJobPost === false` → `NOT_A_JOB_POST`; image mode with empty `extractedText` → `UNREADABLE_IMAGE`; HTTP 429 → `RATE_LIMITED`; invalid JSON, schema failure after one retry, or API failure → `AI_ERROR`.
 5. **Deterministic Processing (`src/shared/rules.ts` & `src/shared/highlight.ts`)**:
-   - `validateQuotes`: Drops invalid quotes (collapsing whitespace/ignoring case only, preserving punctuation); marks context signals as "From your answers".
+   - `validateQuotes`: Drops invalid quotes (collapsing whitespace/ignoring case only, preserving punctuation); resolves duplicate quotes across lanes by keeping the quote strictly in the higher-severity lane (Scam > Mismatch > Ghost); marks context signals as "From your answers".
    - `nextMove`: Computes stamp (**Skip** if Scam is High; **Verify first** if any lane is Medium/High; else **Apply**).
    - `highlightRanges`: Maps quotes back to original character indices in the unmodified post text with color priority (Scam > Mismatch > Ghost).
 6. **Report Rendering (`ReportView`)**:
-   - Renders `NextMoveStamp`, `PostView` (with highlights), and 3 `LaneCard` components.
+   - Renders `NextMoveStamp`, `PostView` (with highlights and label *"Text read from your screenshot"* or *"Text read from your N screenshots"*), and 3 `LaneCard` components.
    - Clicking a signal item smooth-scrolls to and pulses the matching highlight span.
 
 ## Stack
@@ -81,7 +82,7 @@ Main page component managing client state transition between `InputState` and `R
 PRD ref: `prd.md > Screens and Layout`.
 
 ### `src/client/components/InputPanel.tsx`
-Tabbed container (*Paste text*, *Upload screenshot*, *Try a sample*) managing text area and screenshot file dropzone.
+Tabbed container (*Paste text*, *Upload screenshot*, *Try a sample*) managing text area, screenshot file dropzone accepting up to 2 images (due to vision model 8,000 TPM limit at 2,048 tokens/image) with removable ordered thumbnails, and sample selection (4 fictional posts including Bengali scam-like).
 PRD ref: `prd.md > Core Journey (Step 2)`.
 
 ### `src/client/components/ContextChips.tsx`
@@ -97,7 +98,7 @@ Report layout shell orchestrating two-column desktop / stacked mobile views.
 PRD ref: `prd.md > Screens and Layout`.
 
 ### `src/client/components/PostView.tsx`
-Monospace text viewer displaying full post text with embedded highlight spans and scroll-into-view pulse handlers.
+Monospace text viewer displaying full post text (or joined extracted text labeled *"Text read from your screenshot"* or *"Text read from your N screenshots"*) with embedded highlight spans and scroll-into-view pulse handlers.
 PRD ref: `prd.md > Core Journey (Step 6)`.
 
 ### `src/client/components/LaneCard.tsx`
@@ -147,10 +148,14 @@ const TextRequestSchema = z.object({
   context: ContextSchema,
 });
 
-const ImageRequestSchema = z.object({
-  mode: z.literal("image"),
+const ImageItemSchema = z.object({
   imageBase64: z.string().min(1),
   mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
+const ImageRequestSchema = z.object({
+  mode: z.literal("image"),
+  images: z.array(ImageItemSchema).min(1).max(2),
   context: ContextSchema,
 });
 
@@ -222,17 +227,17 @@ d:\devpost-hackathon/
 │   │   │   ├── PostView.tsx        # Highlighted post text viewer
 │   │   │   └── ReportView.tsx      # Report view layout shell
 │   │   └── lib/
-│   │       └── image.ts            # Client-side image validation & downscaling
+│   │       └── image.ts            # Client-side image validation & downscaling (up to 2 images)
 │   ├── server/
 │   │   ├── groq.ts                 # Groq client using z.toJSONSchema (server-only)
 │   │   └── prompt.ts               # System instructions & prompt builder (server-only)
 │   └── shared/
 │       ├── data/
-│       │   ├── sample-results.ts   # Cached fallback results for 3 sample posts
-│       │   └── samples.ts          # 3 fictional pre-loaded sample job posts
+│       │   ├── sample-results.ts   # Cached fallback results for 4 sample posts (captured from real runs)
+│       │   └── samples.ts          # 4 fictional pre-loaded sample job posts (including Bengali scam-like)
 │       ├── errors.ts               # Error codes & user-facing message mapping
 │       ├── highlight.ts            # Pure function: maps quotes to original char indices
-│       ├── rules.ts                # Pure logic: validateQuotes & nextMove
+│       ├── rules.ts                # Pure logic: validateQuotes, duplicate quote lane priority & nextMove
 │       ├── schema.ts               # Zod request & response schemas
 │       └── types.ts                # Exported TypeScript types & interfaces
 ├── devpost/
@@ -244,7 +249,7 @@ d:\devpost-hackathon/
 │   └── capture-sample-results.mjs # Script to capture real API results for sample posts
 ├── tests/
 │   ├── highlight.test.ts           # Vitest unit tests for highlight range mappings
-│   └── rules.test.ts               # Vitest unit tests for quote verification & next move
+│   └── rules.test.ts               # Vitest unit tests for quote verification, duplicate quote priority & next move
 ├── .env.example                    # Environment variable template
 ├── next.config.ts                  # Next.js configuration
 ├── package.json                    # Application dependencies & npm scripts (including capture:samples)
@@ -267,11 +272,11 @@ PRD ref: `prd.md > States and Boundaries`.
 - **Unreadable Screenshot**: Image mode returning empty `extractedText` maps to `UNREADABLE_IMAGE`.
 - **API Rate Limit (HTTP 429)**: Groq HTTP 429 status maps to `RATE_LIMITED`. When `GROQ_MODEL` is rate limited, text requests retry on an optional text-only fallback model set by `GROQ_TEXT_FALLBACK_MODEL` (`openai/gpt-oss-120b`); image requests use only `GROQ_MODEL`.
 - **AI / Parsing Error**: Any other API error or invalid AI JSON response maps to `AI_ERROR`.
-- **Sample Fallback**: Built-in sample posts catching `RATE_LIMITED` or `AI_ERROR` display a saved example result from `src/shared/data/sample-results.ts` labeled *"Saved example result"*.
-- **Hallucinated Signal Quotes**: Handled deterministically by `src/shared/rules.ts > validateQuotes`. Quotes not matching the post text after collapsing whitespace and ignoring case (with exact punctuation preserved) are dropped before rendering.
+- **Sample Fallback**: Built-in sample posts (4 samples) catching `RATE_LIMITED` or `AI_ERROR` display a saved example result from `src/shared/data/sample-results.ts` labeled *"Saved example result"*, captured from a real run.
+- **Hallucinated & Duplicate Signal Quotes**: Handled deterministically by `src/shared/rules.ts > validateQuotes`. Quotes not matching the post text after collapsing whitespace and ignoring case (with exact punctuation preserved) are dropped before rendering. If the same quote (after normalization) appears in more than one lane, it is kept only in the higher-severity lane (Scam > Mismatch > Ghost), covered by a unit test in `tests/rules.test.ts`.
 
 ## What Was Simplified and Why
-- **Client-Side Canvas Downscaling**: Replaces heavy server-side image processing libraries with HTML5 Canvas downscaling in `src/client/lib/image.ts` to stay under Vercel's 4.5 MB body limit.
+- **Client-Side Canvas Downscaling**: Replaces heavy server-side image processing libraries with HTML5 Canvas downscaling in `src/client/lib/image.ts`, resizing each image (up to 2) to keep the combined request payload under Vercel's 4.5 MB body limit.
 - **Single Source Schema (`z.toJSONSchema`)**: Automatically generates Groq structured response schemas directly from Zod definitions, preventing schema drift between AI prompt configuration and server validation.
 - **Pure Function Verification**: Uses lightweight TypeScript substring checking in `src/shared/rules.ts` rather than complex NLP string distance engines.
 
@@ -281,20 +286,22 @@ PRD ref: `prd.md > States and Boundaries`.
 - **Client/Server Code Separation (`src/server/` & `server-only`)**: Prevents API secrets, AI SDK logic, and server prompt logic from ever leaking into client browser bundles.
 - **Tailwind v4 Theme Tokens**: Configured `@theme` rules directly in `src/app/globals.css`, eliminating the need for `tailwind.config.ts`.
 - **Exact Punctuation & Normalization Match**: Quote matching collapses extra whitespace and ignores case, but strictly matches punctuation to ensure exact highlight mapping back to original character indices in `src/shared/highlight.ts`.
+- **Duplicate Quote Lane Priority**: When the same quote appears in more than one lane, `rules.ts` keeps it only in the higher-severity lane (Scam > Mismatch > Ghost). Covered by a unit test.
+- **2-Screenshot Limit**: Capped at 2 images per request because the Groq vision model's free tier has an 8,000 tokens-per-minute (TPM) rate limit, and each image consumes 2,048 tokens.
 
 ### Learner Technical Uncertainty / Investigation
 - **Quote Validation & Highlight Alignment**: Resolved by normalizing whitespace and casing during quote search while mapping character indices back to the original unmodified text string for highlight rendering in `PostView`.
 
 ### Open Issues
-- Bengali screenshot OCR tested in Slice 4: Groq reads Bengali screenshots accurately enough for quote highlights to match, with occasional misread words on unfamiliar names. Groq remains sole provider; Slice 6 will add a user note to compare AI text reading with the image.
+- Bengali support & OCR: A fourth built-in fictional sample written in Bengali (scam-like) allows instant one-click demonstration of Bengali post analysis, with fallback captured from a real run. Groq reads Bengali screenshots accurately enough for quote highlights to match, with occasional misread words on unfamiliar names. Groq remains sole provider; Slice 6 will add a user note to compare AI text reading with the image.
 
 ## Build Plan
 
 The build will proceed in 6 ordered, verifiable steps:
 
-1. **Slice 1: Scaffold & Static Input UI**: Set up Next.js + Tailwind v4 + Fonts + Zod + Vitest. Build `InputPanel`, `ContextChips`, and static page layout.
-2. **Slice 2: Groq API Route & Samples**: Implement `src/shared/schema.ts`, `src/server/groq.ts`, `src/server/prompt.ts`, `src/shared/data/samples.ts`, `src/shared/errors.ts`, and `src/app/api/analyze/route.ts` for text analysis.
-3. **Slice 3: Rules Engine, Highlights & Report UI**: Implement `src/shared/rules.ts`, `src/shared/highlight.ts`, and unit tests (`tests/rules.test.ts`, `tests/highlight.test.ts`). Build `ReportView`, `PostView`, `LaneCard`, and `NextMoveStamp`.
-4. **Slice 4: Image Handling & OCR**: Implement `src/client/lib/image.ts` for image format/size validation and client-side downscaling. Test screenshot uploads.
-5. **Slice 5: Loading, Error States & Fallback for Sample Posts**: Build `LoadingSteps`, `ErrorNotice`, and `src/shared/data/sample-results.ts` for fallback for sample posts.
+1. **Slice 1: Scaffold & Static Input UI**: Set up Next.js + Tailwind v4 + Fonts + Zod + Vitest. Build `InputPanel` (text, multi-screenshot dropzone with ordered removable thumbnails up to 2 images, 4 samples), `ContextChips`, and static page layout.
+2. **Slice 2: Groq API Route & Samples**: Implement `src/shared/schema.ts` (including `images` array schema), `src/server/groq.ts`, `src/server/prompt.ts`, `src/shared/data/samples.ts` (4 samples including Bengali scam-like), `src/shared/errors.ts`, and `src/app/api/analyze/route.ts` for text and image analysis.
+3. **Slice 3: Rules Engine, Highlights & Report UI**: Implement `src/shared/rules.ts` (including duplicate quote lane priority Scam > Mismatch > Ghost), `src/shared/highlight.ts`, and unit tests (`tests/rules.test.ts`, `tests/highlight.test.ts`). Build `ReportView`, `PostView`, `LaneCard`, and `NextMoveStamp`.
+4. **Slice 4: Multi-Image Handling & OCR**: Implement `src/client/lib/image.ts` for image format/size validation and client-side downscaling (up to 2 images, total payload < 4.5 MB). Test screenshot uploads and joined text display.
+5. **Slice 5: Loading, Error States & Fallback for Sample Posts**: Build `LoadingSteps`, `ErrorNotice`, and `src/shared/data/sample-results.ts` (captured from real runs for all 4 samples) for fallback for sample posts.
 6. **Slice 6: Visual Polish, Accessibility & Vercel Deployment**: Final responsive pass, contrast check, keyboard navigation, and deploy to Vercel.

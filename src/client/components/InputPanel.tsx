@@ -1,13 +1,8 @@
 "use client";
 
-import {
-    useEffect,
-    useRef,
-    useState,
-    type DragEvent,
-    type KeyboardEvent,
-} from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import type { SamplePost } from "@/shared/data/samples";
+import { MAX_SCREENSHOTS } from "@/shared/types";
 
 export type InputTab = "text" | "image" | "sample";
 
@@ -25,9 +20,10 @@ interface InputPanelProps {
     onTabChange: (tab: InputTab) => void;
     text: string;
     onTextChange: (text: string) => void;
-    file: File | null;
+    files: File[];
     fileError: string | null;
-    onFileChange: (file: File | null) => void;
+    onAddFiles: (files: File[]) => void;
+    onRemoveFile: (index: number) => void;
     samples: SamplePost[];
     sampleId: SamplePost["id"] | null;
     onSampleChange: (id: SamplePost["id"]) => void;
@@ -38,9 +34,10 @@ export function InputPanel({
     onTabChange,
     text,
     onTextChange,
-    file,
+    files,
     fileError,
-    onFileChange,
+    onAddFiles,
+    onRemoveFile,
     samples,
     sampleId,
     onSampleChange,
@@ -80,9 +77,7 @@ export function InputPanel({
                             aria-controls={`panel-${t.id}`}
                             tabIndex={selected ? 0 : -1}
                             onClick={() => onTabChange(t.id)}
-                            className={`relative -mb-[1.5px] rounded-t-md border-[1.5px] border-b-0 border-ink px-4 py-2 text-sm font-medium transition-colors ${selected
-                                ? "z-10 bg-card"
-                                : "bg-paper-deep text-ink-soft hover:text-ink"
+                            className={`relative -mb-[1.5px] rounded-t-md border-[1.5px] border-b-0 border-ink px-4 py-2 text-sm font-medium transition-colors ${selected ? "z-10 bg-card" : "bg-paper-deep text-ink-soft hover:text-ink"
                                 }`}
                         >
                             {t.label}
@@ -99,14 +94,15 @@ export function InputPanel({
             >
                 {tab === "text" && <TextPanel text={text} onTextChange={onTextChange} />}
                 {tab === "image" && (
-                    <ImagePanel file={file} error={fileError} onFileChange={onFileChange} />
+                    <ImagePanel
+                        files={files}
+                        error={fileError}
+                        onAddFiles={onAddFiles}
+                        onRemoveFile={onRemoveFile}
+                    />
                 )}
                 {tab === "sample" && (
-                    <SamplePanel
-                        samples={samples}
-                        sampleId={sampleId}
-                        onSampleChange={onSampleChange}
-                    />
+                    <SamplePanel samples={samples} sampleId={sampleId} onSampleChange={onSampleChange} />
                 )}
             </div>
         </div>
@@ -150,63 +146,78 @@ function TextPanel({
 }
 
 function ImagePanel({
-    file,
+    files,
     error,
-    onFileChange,
+    onAddFiles,
+    onRemoveFile,
 }: {
-    file: File | null;
+    files: File[];
     error: string | null;
-    onFileChange: (file: File | null) => void;
+    onAddFiles: (files: File[]) => void;
+    onRemoveFile: (index: number) => void;
 }) {
     const [dragging, setDragging] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const [previews, setPreviews] = useState<string[]>([]);
 
     useEffect(() => {
-        if (!file) {
-            setPreviewUrl(null);
-            return;
-        }
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
-        return () => URL.revokeObjectURL(url);
-    }, [file]);
+        const urls = files.map((file) => URL.createObjectURL(file));
+        setPreviews(urls);
+        return () => urls.forEach((url) => URL.revokeObjectURL(url));
+    }, [files]);
+
+    const canAddMore = files.length < MAX_SCREENSHOTS;
+    const isFirst = files.length === 0;
 
     function handleDrop(event: DragEvent<HTMLLabelElement>) {
         event.preventDefault();
         setDragging(false);
-        const dropped = event.dataTransfer.files?.[0];
-        if (dropped) onFileChange(dropped);
-    }
-
-    function clearFile() {
-        onFileChange(null);
-        if (inputRef.current) inputRef.current.value = "";
+        const dropped = Array.from(event.dataTransfer.files ?? []);
+        if (dropped.length > 0) onAddFiles(dropped);
     }
 
     return (
         <div className="space-y-3">
-            {file && previewUrl ? (
-                <div className="flex flex-wrap items-center gap-4 rounded-sm border border-rule bg-paper/40 p-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- local object URL preview */}
-                    <img
-                        src={previewUrl}
-                        alt="Preview of the uploaded job post screenshot"
-                        className="h-28 w-auto max-w-[45%] rounded-sm border border-ink/20 object-contain"
-                    />
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate font-mono text-sm">{file.name}</p>
-                        <p className="font-mono text-xs text-ink-soft">{(file.size / 1024).toFixed(0)} KB</p>
-                        <button
-                            type="button"
-                            onClick={clearFile}
-                            className="mt-2 rounded-sm border border-ink px-3 py-1.5 text-sm hover:bg-paper-deep"
+            {files.length > 0 && (
+                <ol className="grid gap-3 sm:grid-cols-2" aria-label="Screenshots in reading order">
+                    {files.map((file, index) => (
+                        <li
+                            key={`${file.name}-${file.lastModified}-${index}`}
+                            className="flex items-center gap-3 rounded-sm border border-rule bg-paper/40 p-3"
                         >
-                            Remove
-                        </button>
-                    </div>
-                </div>
-            ) : (
+                            <span
+                                aria-hidden="true"
+                                className="grid size-7 shrink-0 place-items-center rounded-full bg-ink font-mono text-xs text-paper"
+                            >
+                                {index + 1}
+                            </span>
+                            {previews[index] && (
+                                // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
+                                <img
+                                    src={previews[index]}
+                                    alt={`Screenshot ${index + 1} of the job post`}
+                                    className="h-20 w-16 shrink-0 rounded-sm border border-ink/20 object-cover object-top"
+                                />
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate font-mono text-xs">{file.name}</p>
+                                <p className="font-mono text-[11px] text-ink-soft">
+                                    {(file.size / 1024).toFixed(0)} KB · {index === 0 ? "top of the post" : "continues the post"}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveFile(index)}
+                                    aria-label={`Remove screenshot ${index + 1}`}
+                                    className="mt-1.5 rounded-sm border border-ink px-2.5 py-1 text-xs hover:bg-paper-deep"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+            )}
+
+            {canAddMore && (
                 <label
                     onDragOver={(event) => {
                         event.preventDefault();
@@ -214,20 +225,30 @@ function ImagePanel({
                     }}
                     onDragLeave={() => setDragging(false)}
                     onDrop={handleDrop}
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border-2 border-dashed px-4 py-12 text-center transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${dragging ? "border-ink bg-paper-deep" : "border-ink/40 bg-paper/40 hover:bg-paper-deep/60"
-                        }`}
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border-2 border-dashed px-4 text-center transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink ${isFirst ? "py-12" : "py-6"
+                        } ${dragging ? "border-ink bg-paper-deep" : "border-ink/40 bg-paper/40 hover:bg-paper-deep/60"}`}
                 >
                     <input
-                        ref={inputRef}
                         type="file"
+                        multiple
                         accept="image/jpeg,image/png,image/webp"
                         className="sr-only"
-                        onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+                        onChange={(event) => {
+                            const picked = Array.from(event.target.files ?? []);
+                            if (picked.length > 0) onAddFiles(picked);
+                            event.target.value = "";
+                        }}
                     />
-                    <span className="font-serif text-lg">Drop a screenshot of the post</span>
-                    <span className="text-sm text-ink-soft">or click to choose a file</span>
+                    <span className="font-serif text-lg">
+                        {isFirst ? "Drop a screenshot of the post" : "Add the rest of the post"}
+                    </span>
+                    <span className="text-sm text-ink-soft">
+                        {isFirst
+                            ? `or click to choose. Long post? Add up to ${MAX_SCREENSHOTS} screenshots, top part first.`
+                            : "Optional: a second screenshot if the post continues."}
+                    </span>
                     <span className="mt-1 font-mono text-xs text-ink-soft">
-                        JPG, PNG, or WebP · up to 4 MB
+                        JPG, PNG, or WebP · up to 4 MB each
                     </span>
                 </label>
             )}
@@ -274,9 +295,7 @@ function SamplePanel({
                         </span>
                         <span className="font-serif text-base leading-snug">{sample.title}</span>
                         <span className="text-xs text-ink-soft">{sample.company} (fictional)</span>
-                        <span className="line-clamp-3 font-mono text-xs text-ink-soft">
-                            {sample.text}
-                        </span>
+                        <span className="line-clamp-3 font-mono text-xs text-ink-soft">{sample.text}</span>
                     </label>
                 ))}
             </div>

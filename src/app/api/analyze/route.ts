@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MIN_TEXT_CHARS = 80;
-// Keeps the whole request under Vercel's 4.5 MB body limit
+// Total for all screenshots; keeps the whole request under Vercel's 4.5 MB body limit
 const MAX_IMAGE_BASE64_CHARS = 4_000_000;
 
 function errorResponse(code: ErrorCode) {
@@ -42,8 +42,11 @@ export async function POST(req: Request) {
     if (request.mode === "text" && request.text.trim().length < MIN_TEXT_CHARS) {
         return errorResponse("TOO_SHORT");
     }
-    if (request.mode === "image" && request.imageBase64.length > MAX_IMAGE_BASE64_CHARS) {
-        return errorResponse("INVALID_IMAGE");
+    if (request.mode === "image") {
+        const totalChars = request.images.reduce((sum, image) => sum + image.imageBase64.length, 0);
+        if (totalChars > MAX_IMAGE_BASE64_CHARS) {
+            return errorResponse("INVALID_IMAGE");
+        }
     }
 
     try {

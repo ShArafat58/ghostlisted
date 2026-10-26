@@ -11,9 +11,11 @@ import {
 
 const MAX_ATTEMPTS = 2;
 
-// Real replies stay well under these; smaller caps also keep us further from per-minute token limits
+// Real replies stay well under these. Two images already cost 4,096 tokens,
+// so their reply cap is lower to stay inside the 8,000 tokens-per-minute free limit.
 const MAX_TOKENS_TEXT = 1500;
-const MAX_TOKENS_IMAGE = 3000;
+const MAX_TOKENS_ONE_IMAGE = 3000;
+const MAX_TOKENS_TWO_IMAGES = 1800;
 
 let cachedJsonSchema: Record<string, unknown> | null = null;
 
@@ -45,6 +47,11 @@ function getModels(mode: AnalyzeRequest["mode"]): { apiKey: string; models: stri
         models.push(textFallback);
     }
     return { apiKey, models };
+}
+
+function maxTokensFor(request: AnalyzeRequest): number {
+    if (request.mode === "text") return MAX_TOKENS_TEXT;
+    return request.images.length > 1 ? MAX_TOKENS_TWO_IMAGES : MAX_TOKENS_ONE_IMAGE;
 }
 
 type ParseResult =
@@ -106,9 +113,9 @@ async function runWithModel(
             });
             raw = completion.choices[0]?.message?.content;
         } catch (error) {
-            if (error instanceof Groq.APIError && error.status === 429) {
-                // Groq's message names the exact limit that was hit (RPM, TPM, RPD or TPD)
-                console.warn(`[groq] ${model} rate limited:`, error.message);
+            // 429 = too many requests; 413 = one request larger than the per-minute token limit
+            if (error instanceof Groq.APIError && (error.status === 429 || error.status === 413)) {
+                console.warn(`[groq] ${model} rate limited (${error.status}):`, error.message);
                 throw new AnalyzeError("RATE_LIMITED");
             }
             const message = error instanceof Error ? error.message : "Groq request failed";
@@ -137,14 +144,14 @@ export async function analyzePost(request: AnalyzeRequest): Promise<AnalyzeRespo
         request.mode === "image"
             ? [
                 { type: "text", text: userText },
-                {
-                    type: "image_url",
-                    image_url: { url: `data:${request.mimeType};base64,${request.imageBase64}` },
-                },
+                ...request.images.map((image) => ({
+                    type: "image_url" as const,
+                    image_url: { url: `data:${image.mimeType};base64,${image.imageBase64}` },
+                })),
             ]
             : userText;
 
-    const maxTokens = request.mode === "image" ? MAX_TOKENS_IMAGE : MAX_TOKENS_TEXT;
+    const maxTokens = maxTokensFor(request);
 
     for (const model of models) {
         try {

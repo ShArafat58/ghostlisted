@@ -6,15 +6,18 @@ import { useEffect, useState } from "react";
 const STEP_MS = 450;
 
 interface LoadingStepsProps {
-    fromScreenshot: boolean;
+    /** 0 for pasted text or samples */
+    screenshotCount: number;
 }
 
-export function LoadingSteps({ fromScreenshot }: LoadingStepsProps) {
-    const steps = [
-        fromScreenshot ? "Reading the screenshot" : "Reading the post",
-        "Looking for signals",
-        "Checking quotes",
-    ];
+function firstStepLabel(screenshotCount: number): string {
+    if (screenshotCount === 0) return "Reading the post";
+    if (screenshotCount === 1) return "Reading the screenshot";
+    return `Reading your ${screenshotCount} screenshots`;
+}
+
+export function LoadingSteps({ screenshotCount }: LoadingStepsProps) {
+    const steps = [firstStepLabel(screenshotCount), "Looking for signals", "Checking quotes"];
     const lastIndex = steps.length - 1;
     const [active, setActive] = useState(0);
 

@@ -7,16 +7,25 @@ import type { Segment } from "@/shared/highlight";
 interface PostViewProps {
     segments: Segment[];
     containerRef: RefObject<HTMLDivElement | null>;
-    fromScreenshot: boolean;
+    /** 0 when the post was pasted text or a sample */
+    screenshotCount: number;
 }
 
-export function PostView({ segments, containerRef, fromScreenshot }: PostViewProps) {
+function titleFor(screenshotCount: number): string {
+    if (screenshotCount === 0) return "The post";
+    if (screenshotCount === 1) return "Text read from your screenshot";
+    return `Text read from your ${screenshotCount} screenshots`;
+}
+
+export function PostView({ segments, containerRef, screenshotCount }: PostViewProps) {
+    const fromScreenshot = screenshotCount > 0;
+
     return (
         <section aria-labelledby="post-view-title" className="paper-card rounded-md">
             <header className="border-b border-rule px-4 py-3 sm:px-5">
                 <p className="font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">Exhibit A</p>
                 <h3 id="post-view-title" className="font-serif text-lg">
-                    {fromScreenshot ? "Text read from your screenshot" : "The post"}
+                    {titleFor(screenshotCount)}
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
                     {fromScreenshot

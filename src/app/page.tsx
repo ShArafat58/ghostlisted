@@ -6,7 +6,7 @@ import { ErrorNotice } from "@/client/components/ErrorNotice";
 import { InputPanel, type InputTab } from "@/client/components/InputPanel";
 import { LoadingSteps } from "@/client/components/LoadingSteps";
 import { ReportView } from "@/client/components/ReportView";
-import { isAcceptedImage, prepareImage } from "@/client/lib/image";
+import { isAcceptedImage, prepareImages } from "@/client/lib/image";
 import { SAMPLE_RESULTS } from "@/shared/data/sample-results";
 import { SAMPLE_POSTS, type SamplePost } from "@/shared/data/samples";
 import {
@@ -16,7 +16,11 @@ import {
     type ErrorCode,
 } from "@/shared/errors";
 import type { AnalyzeRequest, Context } from "@/shared/schema";
-import type { AnalyzeSuccessBody, ProcessedReport } from "@/shared/types";
+import {
+    MAX_SCREENSHOTS,
+    type AnalyzeSuccessBody,
+    type ProcessedReport,
+} from "@/shared/types";
 
 const DEFAULT_CONTEXT: Context = {
     source: "other",
@@ -40,14 +44,14 @@ type Status = "idle" | "loading" | "report" | "error";
 export default function Home() {
     const [tab, setTab] = useState<InputTab>("text");
     const [text, setText] = useState("");
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [fileError, setFileError] = useState<string | null>(null);
     const [sampleId, setSampleId] = useState<SamplePost["id"] | null>(null);
     const [context, setContext] = useState<Context>(DEFAULT_CONTEXT);
 
     const [status, setStatus] = useState<Status>("idle");
     const [report, setReport] = useState<ProcessedReport | null>(null);
-    const [reportFromScreenshot, setReportFromScreenshot] = useState(false);
+    const [reportScreenshotCount, setReportScreenshotCount] = useState(0);
     const [savedExample, setSavedExample] = useState(false);
     const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
 
@@ -55,7 +59,7 @@ export default function Home() {
         tab === "text"
             ? text.trim().length > 0
             : tab === "image"
-                ? file !== null
+                ? files.length > 0
                 : sampleId !== null;
 
     function clearError() {
@@ -75,15 +79,27 @@ export default function Home() {
         clearError();
     }
 
-    function handleFileChange(next: File | null) {
+    function handleAddFiles(added: File[]) {
         clearError();
-        if (next && !isAcceptedImage(next)) {
-            setFile(null);
+        const valid = added.filter(isAcceptedImage);
+        const hadInvalid = valid.length < added.length;
+        const room = MAX_SCREENSHOTS - files.length;
+
+        setFiles([...files, ...valid.slice(0, Math.max(0, room))]);
+
+        if (hadInvalid) {
             setFileError(ERROR_MESSAGES.INVALID_IMAGE.body);
-            return;
+        } else if (valid.length > room) {
+            setFileError(`You can add up to ${MAX_SCREENSHOTS} screenshots. Remove one to add another.`);
+        } else {
+            setFileError(null);
         }
+    }
+
+    function handleRemoveFile(index: number) {
+        clearError();
+        setFiles((current) => current.filter((_, i) => i !== index));
         setFileError(null);
-        setFile(next);
     }
 
     function handleSampleChange(id: SamplePost["id"]) {
@@ -107,14 +123,14 @@ export default function Home() {
             return sample ? { mode: "text", text: sample.text, context } : null;
         }
 
-        if (!file) return null;
-        const image = await prepareImage(file);
-        return { mode: "image", imageBase64: image.base64, mimeType: image.mimeType, context };
+        if (files.length === 0) return null;
+        const images = await prepareImages(files);
+        return { mode: "image", images, context };
     }
 
-    function showReport(nextReport: ProcessedReport, fromScreenshot: boolean, isSaved: boolean) {
+    function showReport(nextReport: ProcessedReport, screenshotCount: number, isSaved: boolean) {
         setReport(nextReport);
-        setReportFromScreenshot(fromScreenshot);
+        setReportScreenshotCount(screenshotCount);
         setSavedExample(isSaved);
         setStatus("report");
         window.scrollTo({ top: 0 });
@@ -123,7 +139,7 @@ export default function Home() {
     /** Built-in samples fall back to a saved real result; everything else shows the error. */
     function handleFailure(code: ErrorCode) {
         if (tab === "sample" && sampleId && FALLBACK_CODES.has(code)) {
-            showReport(SAMPLE_RESULTS[sampleId], false, true);
+            showReport(SAMPLE_RESULTS[sampleId], 0, true);
             return;
         }
         setErrorCode(code);
@@ -171,7 +187,7 @@ export default function Home() {
                 return;
             }
 
-            showReport(nextReport, request.mode === "image", false);
+            showReport(nextReport, request.mode === "image" ? request.images.length : 0, false);
         } catch {
             handleFailure("AI_ERROR");
         }
@@ -179,13 +195,13 @@ export default function Home() {
 
     function handleReset() {
         setReport(null);
-        setReportFromScreenshot(false);
+        setReportScreenshotCount(0);
         setSavedExample(false);
         setStatus("idle");
         setErrorCode(null);
         setTab("text");
         setText("");
-        setFile(null);
+        setFiles([]);
         setFileError(null);
         setSampleId(null);
         setContext(DEFAULT_CONTEXT);
@@ -221,7 +237,7 @@ export default function Home() {
             {reportVisible ? (
                 <ReportView
                     report={report}
-                    fromScreenshot={reportFromScreenshot}
+                    screenshotCount={reportScreenshotCount}
                     savedExample={savedExample}
                     onReset={handleReset}
                 />
@@ -234,9 +250,10 @@ export default function Home() {
                             onTabChange={handleTabChange}
                             text={text}
                             onTextChange={handleTextChange}
-                            file={file}
+                            files={files}
                             fileError={fileError}
-                            onFileChange={handleFileChange}
+                            onAddFiles={handleAddFiles}
+                            onRemoveFile={handleRemoveFile}
                             samples={SAMPLE_POSTS}
                             sampleId={sampleId}
                             onSampleChange={handleSampleChange}
@@ -258,7 +275,7 @@ export default function Home() {
                         )}
 
                         {status === "loading" ? (
-                            <LoadingSteps fromScreenshot={tab === "image"} />
+                            <LoadingSteps screenshotCount={tab === "image" ? files.length : 0} />
                         ) : (
                             <button
                                 type="button"

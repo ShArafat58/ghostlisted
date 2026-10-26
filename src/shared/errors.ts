@@ -49,7 +49,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, { title: string; body: string }> 
     },
     INVALID_IMAGE: {
         title: "That file can't be checked",
-        body: "Use a JPG, PNG, or WebP image up to 4 MB.",
+        body: "Use up to 2 JPG, PNG, or WebP screenshots, each up to 4 MB.",
     },
     RATE_LIMITED: {
         title: "The AI service is busy",
