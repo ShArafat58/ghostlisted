@@ -12,7 +12,7 @@ Ghostlisted highlights the exact lines that signal a **scam**, a **ghost job**, 
 <br>
 
 [![Live demo](https://img.shields.io/badge/Live_demo-ghostlisted.vercel.app-1b1b1b?style=for-the-badge&logo=vercel&logoColor=white)](https://ghostlisted.vercel.app)
-[![Demo video](https://img.shields.io/badge/Demo_video-YouTube-c0392b?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/BA72RINlw48)
+[![Demo video](https://img.shields.io/badge/Demo_video-YouTube-c0392b?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/MuTT8h7eg8A)
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
@@ -29,9 +29,9 @@ Ghostlisted highlights the exact lines that signal a **scam**, a **ghost job**, 
 
 <div align="center">
 
-[![Watch the Ghostlisted demo on YouTube](https://img.youtube.com/vi/BA72RINlw48/maxresdefault.jpg)](https://youtu.be/BA72RINlw48)
+[![Watch the Ghostlisted demo on YouTube](https://img.youtube.com/vi/MuTT8h7eg8A/maxresdefault.jpg)](https://youtu.be/MuTT8h7eg8A)
 
-*2:52 · from a real story to a live check of a sample, a pasted post, and a screenshot*
+*From a real story to a live, end-to-end check in the app*
 
 </div>
 
@@ -45,7 +45,7 @@ At the live **Will It Ship** review, the judges liked the design and the lane co
 - 🧹 **No repeated lines across lanes.** A line that fits two lanes is kept only in the most serious one (Scam → Fresher mismatch → Ghost).
 - 🇧🇩 **A Bengali sample post** in "Try a sample", so Bengali support can be seen in one click.
 
-*The demo video was recorded before these changes. They are all live on the site.*
+*The new demo video shows these changes, and they are all live on the site.*
 
 ---
 
