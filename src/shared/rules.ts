@@ -1,7 +1,8 @@
-import { findQuoteRange } from "@/shared/highlight";
+import { findQuoteRange, normalizeForMatch } from "@/shared/highlight";
 import type { AnalyzeResponse } from "@/shared/schema";
 import {
     LANE_ORDER,
+    LANE_SEVERITY,
     type LaneId,
     type LaneView,
     type NextMove,
@@ -16,19 +17,55 @@ export interface ValidatedLanes {
 }
 
 /**
+ * If the same quote (whitespace and case ignored) appears in more than one lane,
+ * keep it only in the higher-severity lane (Scam > Mismatch > Ghost).
+ * A quote repeated inside one lane is also kept once. Context signals are untouched.
+ */
+export function dedupeQuotesAcrossLanes(
+    signalsByLane: Record<LaneId, SignalView[]>,
+): Record<LaneId, SignalView[]> {
+    const owner = new Map<string, LaneId>();
+
+    for (const laneId of LANE_ORDER) {
+        for (const signal of signalsByLane[laneId]) {
+            if (signal.source !== "post") continue;
+            const key = normalizeForMatch(signal.quote);
+            const current = owner.get(key);
+            if (!current || LANE_SEVERITY[laneId] > LANE_SEVERITY[current]) {
+                owner.set(key, laneId);
+            }
+        }
+    }
+
+    const seen = new Set<string>();
+    const result = {} as Record<LaneId, SignalView[]>;
+
+    for (const laneId of LANE_ORDER) {
+        result[laneId] = signalsByLane[laneId].filter((signal) => {
+            if (signal.source !== "post") return true;
+            const key = normalizeForMatch(signal.quote);
+            if (owner.get(key) !== laneId || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    return result;
+}
+
+/**
  * Keeps a "post" signal only if its quote exists in the post text
  * (whitespace and case ignored, punctuation exact). "context" signals are kept as they are.
- * A lane left with no signals has no strength.
+ * Then removes quotes repeated across lanes. A lane left with no signals has no strength.
  */
 export function validateQuotes(rawLanes: AnalyzeResponse["lanes"], postText: string): ValidatedLanes {
     let droppedQuoteCount = 0;
-    const lanes = {} as Record<LaneId, LaneView>;
+    const kept = {} as Record<LaneId, SignalView[]>;
 
     for (const laneId of LANE_ORDER) {
-        const rawLane = rawLanes[laneId];
         const signals: SignalView[] = [];
 
-        rawLane.signals.forEach((signal, index) => {
+        rawLanes[laneId].signals.forEach((signal, index) => {
             const id = `${laneId}-${index}`;
 
             if (signal.source === "context") {
@@ -53,9 +90,17 @@ export function validateQuotes(rawLanes: AnalyzeResponse["lanes"], postText: str
             });
         });
 
+        kept[laneId] = signals;
+    }
+
+    const deduped = dedupeQuotesAcrossLanes(kept);
+    const lanes = {} as Record<LaneId, LaneView>;
+
+    for (const laneId of LANE_ORDER) {
+        const signals = deduped[laneId];
         lanes[laneId] = {
             id: laneId,
-            strength: signals.length > 0 ? rawLane.strength : null,
+            strength: signals.length > 0 ? rawLanes[laneId].strength : null,
             signals,
         };
     }

@@ -90,6 +90,30 @@ describe("validateQuotes", () => {
 
         expect(lanes.scam.strength).toBeNull();
     });
+
+    it("keeps a quote repeated in two lanes only in the higher-severity lane", () => {
+        const { lanes, droppedQuoteCount } = validateQuotes(
+            makeLanes({
+                ghost: {
+                    strength: "low",
+                    signals: [{ source: "post", quote: "Salary: Negotiable, based on experience.", reason: "Vague pay." }],
+                },
+                mismatch: {
+                    strength: "high",
+                    signals: [
+                        { source: "post", quote: "salary: negotiable,  based on experience.", reason: "Pay tied to experience." },
+                    ],
+                },
+            }),
+            POST,
+        );
+
+        expect(lanes.mismatch.signals).toHaveLength(1);
+        expect(lanes.ghost.signals).toHaveLength(0);
+        expect(lanes.ghost.strength).toBeNull();
+        // A repeated quote is real, so it is not counted as an invented one
+        expect(droppedQuoteCount).toBe(0);
+    });
 });
 
 describe("nextMove", () => {
