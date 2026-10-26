@@ -180,13 +180,18 @@ Built for the Devpost **Build With AI: Basics** hackathon, planned before any co
 <div align="center">
 <br>
 
-To every fresher still applying
+---
 
-If a company went silent on you, it doesn't mean you weren't good enough. Sometimes the seat was never really open.
+## 💌 To every fresher still applying
 
-Keep applying. Keep building. Just stop handing your hope, your time, or your money to posts that never meant it.
+> If a company went silent on you, it doesn't mean you weren't good enough. Sometimes the seat was never really open.
+>
+> Keep applying. Keep building. Just stop handing your hope, your time, or your money to posts that never meant it.
+>
+> **The right door is out there, and it will open.**
 
-The right door is out there, and it will open.
+<div align="center">
+<br>
 
 **Shortlisted, or ghostlisted? Now you'll know before you apply.**
 
