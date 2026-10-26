@@ -6,7 +6,7 @@
 
 ### Before you apply, find out if anyone's really hiring.
 
-Paste a job post or upload a screenshot, in English or Bengali.<br>
+Paste a job post or upload one or two screenshots, in English or Bengali.<br>
 Ghostlisted highlights the exact lines that signal a **scam**, a **ghost job**, or a **"fresher" role that really wants a senior**.
 
 <br>
@@ -19,7 +19,7 @@ Ghostlisted highlights the exact lines that signal a **scam**, a **ghost job**, 
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square)
 ![Zod](https://img.shields.io/badge/Zod-3E67B1?style=flat-square&logo=zod&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-16_passing-2f7a4f?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-17_passing-2f7a4f?style=flat-square&logo=vitest&logoColor=white)
 
 </div>
 
@@ -34,6 +34,18 @@ Ghostlisted highlights the exact lines that signal a **scam**, a **ghost job**, 
 *2:52 · from a real story to a live check of a sample, a pasted post, and a screenshot*
 
 </div>
+
+---
+
+## 🆕 What's new since the Will It Ship review
+
+At the live **Will It Ship** review, the judges liked the design and the lane colors, and pointed out that long job posts don't fit in one screenshot. Since then:
+
+- 🖼️ **Up to two screenshots per check**, read in order. Lines that appear in both are counted once.
+- 🧹 **No repeated lines across lanes.** A line that fits two lanes is kept only in the most serious one (Scam → Fresher mismatch → Ghost).
+- 🇧🇩 **A Bengali sample post** in "Try a sample", so Bengali support can be seen in one click.
+
+*The demo video was recorded before these changes. They are all live on the site.*
 
 ---
 
@@ -66,7 +78,7 @@ Every signal **quotes the exact line** from the post and highlights it in place.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/input.png" alt="Input screen"><br><sub><b>1.</b> Paste a post, upload a screenshot, or try a fictional sample.</sub></td>
+    <td width="50%"><img src="docs/input.png" alt="Input screen"><br><sub><b>1.</b> Paste a post, upload one or two screenshots, or try a fictional sample.</sub></td>
     <td width="50%"><img src="docs/report.png" alt="Report"><br><sub><b>2.</b> One recommended move, with every flagged line highlighted.</sub></td>
   </tr>
   <tr>
@@ -92,9 +104,10 @@ flowchart LR
 
 - ✅ **Validated output** — every reply is checked with Zod; an invalid one is retried once, then shown as an error.
 - ✂️ **No invented quotes** — on the server, each quote is matched against the post (ignoring only whitespace and case). Anything that isn't really there is dropped before it reaches the browser.
+- 🧹 **One lane per line** — if the model puts the same quote in two lanes, the server keeps it only in the most serious one.
 - ⚖️ **Rules decide** — Skip if Scam is High, Verify first if any lane is Medium or High, otherwise Apply.
 - 🔒 **Untrusted input** — the post is treated as data, and instructions hidden inside it are ignored.
-- 🧪 **Tested** — 16 unit tests cover quote validation, highlight mapping, and the next-move rules.
+- 🧪 **Tested** — 17 unit tests cover quote validation, duplicate removal, highlight mapping, and the next-move rules.
 
 ---
 
@@ -159,6 +172,7 @@ Built for the Devpost **Build With AI: Basics** hackathon, planned before any co
 ## ⚠️ Limitations
 
 - Reading screenshots with AI can introduce small errors, especially in unfamiliar names. The app says so and asks you to compare with your image.
+- A check takes at most two screenshots. Groq's free tier allows 8,000 tokens per minute and each image uses about 2,000, so two is the most that fits with the prompt and the reply.
 - Signals are hints, not proof. Always confirm with the company directly.
 - It runs on Groq's free tier, so heavy use can hit rate limits. The built-in samples fall back to a clearly labeled saved result from a real run.
 - All companies and posts in the samples and demo are fictional.
