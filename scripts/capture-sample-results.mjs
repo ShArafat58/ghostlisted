@@ -6,10 +6,19 @@ import { SAMPLE_POSTS } from "../src/shared/data/samples.ts";
 
 const API_URL = process.env.CAPTURE_API_URL ?? "http://localhost:3000/api/analyze";
 const OUTPUT = new URL("../src/shared/data/sample-results.ts", import.meta.url);
+// Spacing requests keeps the capture under the free tier's tokens-per-minute limit
+const PAUSE_MS = 20_000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const results = {};
 
-for (const sample of SAMPLE_POSTS) {
+for (const [index, sample] of SAMPLE_POSTS.entries()) {
+    if (index > 0) {
+        console.log(`Waiting ${PAUSE_MS / 1000}s to stay under the rate limit...`);
+        await sleep(PAUSE_MS);
+    }
+
     process.stdout.write(`Capturing "${sample.id}"... `);
 
     const res = await fetch(API_URL, {

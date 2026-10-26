@@ -3,7 +3,7 @@
 import type { SamplePost } from "@/shared/data/samples";
 import type { ProcessedReport } from "@/shared/types";
 
-export const SAMPLE_RESULTS_CAPTURED_AT = "2026-10-04T03:38:27.491Z";
+export const SAMPLE_RESULTS_CAPTURED_AT = "2026-10-26T00:33:23.264Z";
 
 export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
   "scam": {
@@ -18,7 +18,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "scam",
             "source": "post",
             "quote": "No interview required — selection is based on your form only.",
-            "reason": "Legitimate employers almost always conduct interviews to verify skills and fit, so skipping this step is a common fraud tactic.",
+            "reason": "Legitimate employers almost always conduct interviews, so this suggests the process is not genuine.",
             "start": 126,
             "end": 187
           },
@@ -27,7 +27,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "scam",
             "source": "post",
             "quote": "pay a refundable onboarding and training fee of USD 35 within 24 hours.",
-            "reason": "Requiring payment before starting work is a major red flag, as legitimate companies pay you for your work rather than charging you to join.",
+            "reason": "Requiring payment before starting work is a classic sign of a job scam.",
             "start": 293,
             "end": 364
           },
@@ -36,7 +36,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "scam",
             "source": "post",
             "quote": "send a photo of your national ID card, your bank account details, and a selfie for verification.",
-            "reason": "Requesting sensitive personal and financial documents before any interview or contract is a strong indicator of identity theft or financial fraud.",
+            "reason": "Asking for sensitive personal and financial documents before an interview is a strong indicator of identity theft or fraud.",
             "start": 380,
             "end": 476
           },
@@ -45,7 +45,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "scam",
             "source": "post",
             "quote": "contact our hiring desk on Telegram only.",
-            "reason": "Using personal or unverified messaging apps instead of official company email or phone lines is a common way scammers avoid traceability.",
+            "reason": "Legitimate companies use official email or phone lines, not personal messaging apps like Telegram for hiring.",
             "start": 499,
             "end": 540
           },
@@ -53,16 +53,16 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "id": "scam-4",
             "lane": "scam",
             "source": "post",
-            "quote": "Offer valid today only.",
-            "reason": "Creating extreme urgency is a psychological tactic used to prevent you from researching the company or thinking critically about the offer.",
-            "start": 589,
-            "end": 612
+            "quote": "Salary: USD 900 per week, paid every Friday.",
+            "reason": "This pay rate is unrealistically high for a 2-hour-a-day data entry role, which is a common bait in scams.",
+            "start": 189,
+            "end": 233
           },
           {
             "id": "scam-5",
             "lane": "scam",
             "source": "context",
-            "reason": "Receiving a job offer through a WhatsApp or Telegram forward is a common distribution method for scams, as it bypasses official job boards and company career pages."
+            "reason": "The post was found via a WhatsApp or Telegram forward, which is a common channel for spreading fraudulent job offers."
           }
         ]
       },
@@ -79,9 +79,9 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
     },
     "nextMove": "Skip",
     "verificationSteps": [
-      "Do not send any money, ID documents, or bank details to this contact.",
-      "Search for 'Tessarine Global Services' on official business registries or LinkedIn to verify if the company actually exists.",
-      "Check if this specific job title and salary are listed on the company's official website or a reputable job board like LinkedIn or Indeed."
+      "Do not pay any fees or send any personal documents (ID, bank details, or selfies) to this company.",
+      "Search for 'Tessarine Global Services' online to see if it is a registered, legitimate company with a physical office and verified reviews.",
+      "Report this post to the platform where you found it and to local consumer protection agencies as a potential job scam."
     ],
     "droppedQuoteCount": 0
   },
@@ -111,7 +111,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "ghost",
             "source": "post",
             "quote": "Open until filled.",
-            "reason": "A lack of a specific deadline often indicates the role is not an active, time-sensitive hiring need.",
+            "reason": "A lack of a specific deadline is common in evergreen posts that remain active indefinitely without a clear hiring timeline.",
             "start": 533,
             "end": 551
           },
@@ -120,7 +120,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "ghost",
             "source": "post",
             "quote": "Salary: Competitive.",
-            "reason": "Vague salary information makes it difficult to assess if the role is a genuine, well-funded position.",
+            "reason": "Vague salary information makes it difficult to assess if the offer is fair or if the role is a genuine priority for the company.",
             "start": 490,
             "end": 510
           },
@@ -129,7 +129,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "ghost",
             "source": "post",
             "quote": "Even if you have applied before, feel free to apply again.",
-            "reason": "Encouraging repeat applications is a common tactic for building a large pool of candidates rather than filling a specific vacancy.",
+            "reason": "Encouraging repeat applications is a tactic often used to keep a talent pool active without committing to a specific hiring process.",
             "start": 553,
             "end": 611
           },
@@ -137,7 +137,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "id": "ghost-4",
             "lane": "ghost",
             "source": "context",
-            "reason": "The post being over 3 months old and reposted suggests it is an evergreen listing that remains active regardless of actual hiring activity."
+            "reason": "The post being over 3 months old and reposted suggests it is a long-standing 'evergreen' listing rather than a new, urgent hire."
           }
         ]
       },
@@ -149,9 +149,9 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
     },
     "nextMove": "Verify first",
     "verificationSteps": [
-      "Search for 'Halvern Arc Technologies' on LinkedIn to see if the company has a verified presence, recent employee activity, or a substantial number of followers.",
-      "Look for specific job titles (e.g., 'Junior Software Engineer') on the company's official careers page to see if there are active, dated requisitions instead of this general 'All Levels' post.",
-      "Check if the company has any recent reviews on Glassdoor or Indeed to verify if they are currently hiring or if they have a history of ghosting candidates."
+      "Search for 'Halvern Arc Technologies' on LinkedIn to see if the company has a verified presence and recent employee activity.",
+      "Look for specific job titles (e.g., 'Junior Software Engineer') on the company's official careers page to see if a real, dated requisition exists.",
+      "Check if the company has any recent reviews or feedback from candidates on job platforms to see if others have reported a lack of communication."
     ],
     "droppedQuoteCount": 0
   },
@@ -172,7 +172,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "ghost",
             "source": "post",
             "quote": "Only shortlisted candidates will be contacted.",
-            "reason": "This phrase is common in posts that may not have a clear hiring timeline or intent to hire immediately.",
+            "reason": "This is a standard clause that does not provide specific information about the hiring process or intent.",
             "start": 495,
             "end": 541
           }
@@ -187,7 +187,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "mismatch",
             "source": "post",
             "quote": "Minimum 3 years of professional experience building production systems",
-            "reason": "This requirement contradicts the 'Fresher' and 'Graduate Trainee' label, as fresh graduates typically have no professional experience.",
+            "reason": "A fresher or graduate trainee role typically does not require several years of professional experience.",
             "start": 268,
             "end": 338
           },
@@ -196,7 +196,7 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "lane": "mismatch",
             "source": "post",
             "quote": "Must have led a team of at least 3 engineers",
-            "reason": "Requiring leadership of a team is a senior-level responsibility that does not fit a trainee or entry-level role.",
+            "reason": "Leading a team is a senior or management responsibility, not an entry-level task.",
             "start": 341,
             "end": 385
           },
@@ -204,8 +204,17 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
             "id": "mismatch-2",
             "lane": "mismatch",
             "source": "post",
+            "quote": "Hands-on ownership of cloud infrastructure and on-call rotations",
+            "reason": "Full ownership of critical infrastructure is usually reserved for experienced engineers, not trainees.",
+            "start": 388,
+            "end": 452
+          },
+          {
+            "id": "mismatch-3",
+            "lane": "mismatch",
+            "source": "post",
             "quote": "Salary: Negotiable, based on experience.",
-            "reason": "Paying based on experience is a mismatch for a fresher role, as fresh graduates do not have professional experience to negotiate from.",
+            "reason": "A fresher has no professional experience to base their salary on, making this term contradictory to the role's label.",
             "start": 454,
             "end": 494
           }
@@ -214,8 +223,82 @@ export const SAMPLE_RESULTS: Record<SamplePost["id"], ProcessedReport> = {
     },
     "nextMove": "Verify first",
     "verificationSteps": [
-      "Search for 'Corvane Systems Ltd' on LinkedIn or the company's official website to verify if they have a real presence and if this specific 'Graduate Trainee' program is listed on their careers page.",
-      "Contact the company's general HR email or phone number (found on their official website, not the job post) to ask for a requisition ID or confirmation that this specific opening is active and not a typo for a senior role."
+      "Search for 'Corvane Systems Ltd' on LinkedIn or a business registry to verify if the company is a real, established entity.",
+      "Look for the specific '2026 Graduate Trainee Program' on the company's official careers page to see if the requirements match the job board listing.",
+      "If you decide to apply, be prepared to explain how you meet the 3-year experience requirement, as this is a major contradiction for a fresher role."
+    ],
+    "droppedQuoteCount": 0
+  },
+  "bengali": {
+    "postText": "জরুরি নিয়োগ বিজ্ঞপ্তি\nনীলাভ ডিজিটাল সলিউশনস-এ ঘরে বসে অনলাইন ডাটা এন্ট্রি কাজের জন্য ৩০ জন লোক নেওয়া হবে।\n\nশিক্ষাগত যোগ্যতা: এসএসসি পাস হলেই চলবে। কোনো অভিজ্ঞতা লাগবে না।\nবেতন: দৈনিক ১৫০০-২০০০ টাকা, প্রতিদিন বিকাশে পেমেন্ট।\nকোনো ইন্টারভিউ নেই, আজই জয়েন করুন।\n\nরেজিস্ট্রেশন ফি মাত্র ৫০০ টাকা (ফেরতযোগ্য), বিকাশে পাঠিয়ে স্ক্রিনশট দিন।\nজাতীয় পরিচয়পত্রের ছবি ও বিকাশ নম্বর ইনবক্সে পাঠান।\nযোগাযোগ শুধু হোয়াটসঅ্যাপে: ০১XXXXXXXXX\nসিট সীমিত, আজ রাত ১২টার পর অফার শেষ।",
+    "lanes": {
+      "scam": {
+        "id": "scam",
+        "strength": "high",
+        "signals": [
+          {
+            "id": "scam-0",
+            "lane": "scam",
+            "source": "post",
+            "quote": "কোনো ইন্টারভিউ নেই, আজই জয়েন করুন।",
+            "reason": "Legitimate employers almost always conduct some form of interview or verification process before hiring.",
+            "start": 226,
+            "end": 261
+          },
+          {
+            "id": "scam-1",
+            "lane": "scam",
+            "source": "post",
+            "quote": "রেজিস্ট্রেশন ফি মাত্র ৫০০ টাকা (ফেরতযোগ্য), বিকাশে পাঠিয়ে স্ক্রিনশট দিন।",
+            "reason": "Requiring a payment or fee before starting work is a common tactic used in job scams to extract money from victims.",
+            "start": 263,
+            "end": 336
+          },
+          {
+            "id": "scam-2",
+            "lane": "scam",
+            "source": "post",
+            "quote": "জাতীয় পরিচয়পত্রের ছবি ও বিকাশ নম্বর ইনবক্সে পাঠান।",
+            "reason": "Requesting sensitive personal identification documents and bank details before any interview is a major red flag for identity theft or fraud.",
+            "start": 337,
+            "end": 389
+          },
+          {
+            "id": "scam-3",
+            "lane": "scam",
+            "source": "post",
+            "quote": "যোগাযোগ শুধু হোয়াটসঅ্যাপে: ০১XXXXXXXXX",
+            "reason": "Directing candidates to communicate only via personal messaging apps like WhatsApp, rather than official company channels, is typical of fraudulent job offers.",
+            "start": 390,
+            "end": 429
+          },
+          {
+            "id": "scam-4",
+            "lane": "scam",
+            "source": "post",
+            "quote": "সিট সীমিত, আজ রাত ১২টার পর অফার শেষ।",
+            "reason": "Creating artificial urgency with strict deadlines is a psychological pressure tactic often used to prevent victims from thinking critically or verifying the offer.",
+            "start": 430,
+            "end": 466
+          }
+        ]
+      },
+      "ghost": {
+        "id": "ghost",
+        "strength": null,
+        "signals": []
+      },
+      "mismatch": {
+        "id": "mismatch",
+        "strength": null,
+        "signals": []
+      }
+    },
+    "nextMove": "Skip",
+    "verificationSteps": [
+      "Do not send any money, ID documents, or bank details to this contact.",
+      "Search for the company name 'Nilav Digital Solutions' on official business registries or LinkedIn to verify if it is a real, established entity.",
+      "Report this post to the Facebook group administrators as a potential scam."
     ],
     "droppedQuoteCount": 0
   }

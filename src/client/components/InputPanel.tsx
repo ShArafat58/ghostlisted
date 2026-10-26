@@ -276,7 +276,7 @@ function SamplePanel({
             <legend className="mb-3 text-sm text-ink-soft">
                 Fictional posts from invented companies, ready to check.
             </legend>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
                 {samples.map((sample) => (
                     <label
                         key={sample.id}

@@ -1,7 +1,7 @@
 import type { Context } from "@/shared/schema";
 
 export interface SamplePost {
-    id: "scam" | "ghost" | "mismatch";
+    id: "scam" | "ghost" | "mismatch" | "bengali";
     title: string;
     company: string;
     kindLabel: string;
@@ -71,5 +71,23 @@ Requirements:
 
 Salary: Negotiable, based on experience.
 Only shortlisted candidates will be contacted.`,
+    },
+    {
+        id: "bengali",
+        title: "Online Data Entry (post in Bengali)",
+        company: "Nilabh Digital Solutions",
+        kindLabel: "Bengali · Scam-like",
+        context: { source: "facebook_group", age: "under_1_week", reposted: "not_sure" },
+        text: `জরুরি নিয়োগ বিজ্ঞপ্তি
+নীলাভ ডিজিটাল সলিউশনস-এ ঘরে বসে অনলাইন ডাটা এন্ট্রি কাজের জন্য ৩০ জন লোক নেওয়া হবে।
+
+শিক্ষাগত যোগ্যতা: এসএসসি পাস হলেই চলবে। কোনো অভিজ্ঞতা লাগবে না।
+বেতন: দৈনিক ১৫০০-২০০০ টাকা, প্রতিদিন বিকাশে পেমেন্ট।
+কোনো ইন্টারভিউ নেই, আজই জয়েন করুন।
+
+রেজিস্ট্রেশন ফি মাত্র ৫০০ টাকা (ফেরতযোগ্য), বিকাশে পাঠিয়ে স্ক্রিনশট দিন।
+জাতীয় পরিচয়পত্রের ছবি ও বিকাশ নম্বর ইনবক্সে পাঠান।
+যোগাযোগ শুধু হোয়াটসঅ্যাপে: ০১XXXXXXXXX
+সিট সীমিত, আজ রাত ১২টার পর অফার শেষ।`,
     },
 ];
